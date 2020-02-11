@@ -22,6 +22,7 @@
 RF24 radio(CE,SCN);
 
 const byte address[6] = "00001";
+const int id = 2;
 
 float distance(int trig, int echo){
   int duration = 0;
@@ -68,7 +69,7 @@ void loop() {
   float dist00 = 9999;
   float dist01 = 9999;
   float dist02 = 9999;
-  float data[3];
+  float data[4];
   
   Serial.print("Distanza sensore 00:");
   dist00 = distance(TRIG00,ECHO00);
@@ -82,9 +83,10 @@ void loop() {
   dist02 = distance(TRIG02,ECHO02);
   Serial.println(dist02);
 
-  data[0]=dist00;
-  data[1]=dist01;
-  data[2]=dist02;  
+  data[0] = id;
+  data[1] = dist00;
+  data[2] = dist01;
+  data[3] = dist02;  
   
   radio.write(&data,sizeof(data));
   delay(1000);
