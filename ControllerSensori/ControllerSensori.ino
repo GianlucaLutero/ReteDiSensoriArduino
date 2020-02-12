@@ -1,8 +1,20 @@
 /*
-   Sensori per auto:
-    - parcheggio
-    - luminosita'
-    - angolo di sterzata
+    Controller per rete di sensori auto.
+ 
+    Copyright (C) 2020  Gianluca Lutero
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <SPI.h>
@@ -36,7 +48,10 @@
 RF24 radio(CE, SCN);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
+// Imposto l'indirizzo di comunicazione
 const byte address[6] = "00001";
+
+// Imposto il numero massimo di trasmittenti
 const int n_transmitter = 2;
 
 int button_state = 0;
@@ -45,6 +60,7 @@ int select = 0;
 float parking[3];
 float ambiental[3];
 
+// Funzione per impostare il colore del led
 void setColor(int redValue, int greenValue, int blueValue) {
   analogWrite(RED, redValue);
   analogWrite(GREEN, greenValue);
@@ -96,6 +112,7 @@ void loop() {
     Serial.println(select);
   }
 
+  // Verifico che ci siano dei dati in arrivo
   if (radio.available()) {
     float data[4];
 
@@ -109,7 +126,7 @@ void loop() {
 
     switch (id) {
       case 1:
-
+        // Aggiorno i dati ambientali con quelli ricevuti
         ambiental[0] = data[1];
         ambiental[1] = data[2];
         ambiental[2] = data[3];
@@ -126,14 +143,16 @@ void loop() {
         break;
 
       case 2:
-        // Stampo i dati su display
+
+        // Aggiorno le distanze con quelli ricevuti
         parking[0] = data[1];
         parking[1] = data[2];
         parking[2] = data[3]; 
 
         // Accendo il led in base alla distanza
         float min = data[1];
-
+        
+        // Cerco tra i valori la distanza più piccola
         for (int i = 2; i <= 3; ++i) {
           if (data[i] <= min) {
             min = data[i];
