@@ -30,10 +30,20 @@
 // Buzzer
 #define BUZZER 2
 
+// Button 
+#define BUTTON 3
+
 RF24 radio(CE, SCN);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
 const byte address[6] = "00001";
+const int n_transmitter = 2;
+
+int button_state = 0;
+int select = 0;
+
+float parking[3];
+float ambiental[3];
 
 void setColor(int redValue, int greenValue, int blueValue) {
   analogWrite(RED, redValue);
@@ -63,10 +73,28 @@ void setup() {
   // Inizializzo il buzzer
   pinMode(BUZZER, OUTPUT);
 
+  // Inizializzo il bottone
+  pinMode(BUTTON,INPUT);
+
+  // Inizializzo le variabili dati
+  for(int i=0;i<3;++i){
+    parking[i] = 9999;
+    ambiental[i] = 9999;  
+  }
+  
+
 }
 
 void loop() {
   int id;
+
+  button_state = digitalRead(BUTTON);
+
+  if(button_state == HIGH){
+    select = (select + 1) % n_transmitter;
+    Serial.print("Mostro i dati relativi alla trasmittente: ");
+    Serial.println(select);
+  }
 
   if (radio.available()) {
     float data[4];
@@ -74,8 +102,6 @@ void loop() {
     // Ricevo i dati
     radio.read(&data, sizeof(data));
 
-    lcd.clear();
-    lcd.setCursor(0, 0);
     id = data[0];
     
     Serial.print("Id sensore: ");
@@ -83,18 +109,10 @@ void loop() {
 
     switch (id) {
       case 1:
-        lcd.print("T: ");
-        lcd.print(data[2]);
-        
-        lcd.print("U: ");
-        lcd.print(data[3]);
-        
-        lcd.setCursor(0,1);
-        
-        if(data[1] < 200)
-           lcd.print("Buio");
-        else
-           lcd.print("Luminoso");
+
+        ambiental[0] = data[1];
+        ambiental[1] = data[2];
+        ambiental[2] = data[3];
 
         Serial.print("Temperatura: ");
         Serial.println(data[2]);
@@ -105,25 +123,13 @@ void loop() {
         Serial.print("Luminosita' : ");
         Serial.println(data[1]);
         
-        delay(2000);
         break;
 
       case 2:
         // Stampo i dati su display
-
-        if (data[1] <= 10 || data[2] <= 10 || data[3] <= 10) {
-          lcd.print("    Pericolo    ");
-          lcd.setCursor(0, 1);
-          lcd.print("    Ostacolo    ");
-        } else {
-          lcd.print("L:");
-          lcd.print(data[1]);
-          lcd.print(" C:");
-          lcd.print(data[2]);
-          lcd.setCursor(0, 1);
-          lcd.print("R:");
-          lcd.print(data[3]);
-        }
+        parking[0] = data[1];
+        parking[1] = data[2];
+        parking[2] = data[3]; 
 
         // Accendo il led in base alla distanza
         float min = data[1];
@@ -155,8 +161,46 @@ void loop() {
         Serial.print("Dist 02: ");
         Serial.println(data[3]);
     }
-  }else{
-   // Serial.println("Nessun Segnale!!!!");
   }
+
+  // Stampo i dati sul display in base alla scelta
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  
+  switch(select){
+    case 0:
+        
+        lcd.print("T: ");
+        lcd.print(ambiental[1]);
+        
+        lcd.print("U: ");
+        lcd.print(ambiental[2]);
+        
+        lcd.setCursor(0,1);
+        
+        if(ambiental[0] < 200)
+           lcd.print("Buio");
+        else
+           lcd.print("Luminoso");
+      break;
+    case 1:
+
+        if (parking[0] <= 10 || parking[1] <= 10 || parking[2] <= 10) {
+          lcd.print("    Pericolo    ");
+          lcd.setCursor(0, 1);
+          lcd.print("    Ostacolo    ");
+        } else {
+          lcd.print("L:");
+          lcd.print(parking[0]);
+          lcd.print(" C:");
+          lcd.print(parking[1]);
+          lcd.setCursor(0, 1);
+          lcd.print("R:");
+          lcd.print(parking[2]);
+        }
+      break;
+  }
+
+  delay(1000);
 
 }
